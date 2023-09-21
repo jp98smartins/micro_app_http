@@ -1,12 +1,46 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+import 'package:micro_app_http/src/utils/app_http_overrides.dart';
 
-import 'entities/app_http_exception.dart';
 import 'micro_app_http_interface.dart';
 import 'utils/app_http_logger.dart';
 import 'utils/app_http_options.dart';
-import 'utils/enums/app_http_exception_type.dart';
+
+/// TODO:
+/// 1. Authentication options
+/// 2. Request with retry
+
+AppHttpException defaultExceptionHandler(AppHttpException exception) {
+  // Certificate Exceptions
+  if (exception.type == AppHttpExceptionType.badCertificate) {
+    return exception.copyWith(message: 'Certificate Exception');
+  }
+
+  // Timeout Exceptions
+  if ([
+    AppHttpExceptionType.connectionTimeout,
+    AppHttpExceptionType.receiveTimeout,
+    AppHttpExceptionType.sendTimeout
+  ].contains(exception.type)) {
+    return exception.copyWith(message: 'Timeout Exception');
+  }
+
+  // No Connection Exceptions
+  if (exception.type == AppHttpExceptionType.connectionError ||
+      exception.response == null) {
+    return exception.copyWith(message: 'No connection Exception');
+  }
+
+  // Server Exceptions (500)
+  if (exception.response?.statusCode == 500) {
+    return exception.copyWith(message: 'Server Exception');
+  }
+
+  // Other Exceptions
+  return exception;
+}
 
 final class MicroAppHttp implements MicroAppHttpInterface {
   MicroAppHttp(this.options) {
@@ -19,33 +53,45 @@ final class MicroAppHttp implements MicroAppHttpInterface {
 
     _external = Dio(sourceOptions);
 
-    // Implementation of Interceptor.
+    /// Implementation of BadCertificateCallback/Pinning.
+    ///
+    /// Take a look at the [AppHttpOverrides.loadCertificate] method to understand
+    /// how to pin the app.
+    _external!.httpClientAdapter = IOHttpClientAdapter(createHttpClient: () {
+      return options.needPinning
+          ? AppHttpOverrides.generic()
+          : AppHttpOverrides.pinned();
+    });
+
+    /// Implementation of Interceptor.
     _external?.interceptors.add(
       AppHttpInterceptor(
-        onError: (error, handler) async {
+        onError: (exception, handler) async {
           if (options.showLogs) {
-            final exception = AppHttpException.fromExternalException(error);
             AppHttpLogger.log(
               '''
 =====> [ START API ERROR ] +++++++++++++++++++++++++++++++++++++++++++++++++++++
-Request URI: ${exception.request.uri}
-Request Endpoint: ${exception.request.path}
-Headers: ${exception.request.headers.toString()}
-Query Params: ${exception.request.queryParameters.toString()}
-Body: ${jsonEncode(exception.request.data)}
+Request URI: ${exception.requestOptions.uri}
+Request Endpoint: ${exception.requestOptions.path}
+Headers: ${exception.requestOptions.headers.toString()}
+Query Params: ${exception.requestOptions.queryParameters.toString()}
+Body: ${jsonEncode(exception.requestOptions.data)}
 
  ---
 
-Status Code: ${exception.statusCode}
-Message: ${exception.message}
-Exception Type: ${exception.exceptionType.formatedError}
+Status Code: ${exception.response?.statusCode ?? -1}
+Message: ${exception.message ?? 'Empty Message'}
+Exception Type: ${exception.type.name.toUpperCase()}
 StackTrace: ${exception.stackTrace}
 =====> [ END API ERROR ] -------------------------------------------------------''',
               color: AppHttpLogColors.brightRed,
             );
           }
 
-          handler.next(await options.handleException?.call(exception));
+          handler.next(
+            await options.handleException?.call(exception) ??
+                defaultExceptionHandler(exception),
+          );
         },
         onRequest: (request, handler) {
           if (options.showLogs) {
@@ -89,7 +135,7 @@ Data: ${response.data}
   final AppHttpOptions options;
   Dio? _external;
 
-  // Implementation of methods.
+  // Implementation of HTTP Methods.
 
   @override
   Future<AppHttpResponse<T>> delete<T>(
@@ -114,8 +160,8 @@ Data: ${response.data}
     }
 
     throw AppHttpException(
-      exceptionType: AppHttpExceptionType.unknown,
-      request: AppHttpRequest(
+      type: AppHttpExceptionType.unknown,
+      requestOptions: AppHttpRequest(
         baseUrl: options.baseUrl,
         connectTimeout: options.connectionTimeout,
         data: body,
@@ -127,7 +173,6 @@ Data: ${response.data}
         sendTimeout: options.sendTimeout,
       ),
       response: null,
-      statusCode: -1,
       message: "There's no instance of MicroAppHttp | -1",
     );
   }
@@ -153,8 +198,8 @@ Data: ${response.data}
     }
 
     throw AppHttpException(
-      exceptionType: AppHttpExceptionType.unknown,
-      request: AppHttpRequest(
+      type: AppHttpExceptionType.unknown,
+      requestOptions: AppHttpRequest(
         baseUrl: options.baseUrl,
         connectTimeout: options.connectionTimeout,
         headers: headers,
@@ -165,7 +210,6 @@ Data: ${response.data}
         sendTimeout: options.sendTimeout,
       ),
       response: null,
-      statusCode: -1,
       message: "There's no instance of MicroAppHttp | -1",
     );
   }
@@ -193,8 +237,8 @@ Data: ${response.data}
     }
 
     throw AppHttpException(
-      exceptionType: AppHttpExceptionType.unknown,
-      request: AppHttpRequest(
+      type: AppHttpExceptionType.unknown,
+      requestOptions: AppHttpRequest(
         baseUrl: options.baseUrl,
         connectTimeout: options.connectionTimeout,
         data: body,
@@ -206,7 +250,6 @@ Data: ${response.data}
         sendTimeout: options.sendTimeout,
       ),
       response: null,
-      statusCode: -1,
       message: "There's no instance of MicroAppHttp | -1",
     );
   }
@@ -234,8 +277,8 @@ Data: ${response.data}
     }
 
     throw AppHttpException(
-      exceptionType: AppHttpExceptionType.unknown,
-      request: AppHttpRequest(
+      type: AppHttpExceptionType.unknown,
+      requestOptions: AppHttpRequest(
         baseUrl: options.baseUrl,
         connectTimeout: options.connectionTimeout,
         data: body,
@@ -247,7 +290,6 @@ Data: ${response.data}
         sendTimeout: options.sendTimeout,
       ),
       response: null,
-      statusCode: -1,
       message: "There's no instance of MicroAppHttp | -1",
     );
   }
@@ -275,8 +317,8 @@ Data: ${response.data}
     }
 
     throw AppHttpException(
-      exceptionType: AppHttpExceptionType.unknown,
-      request: AppHttpRequest(
+      type: AppHttpExceptionType.unknown,
+      requestOptions: AppHttpRequest(
         baseUrl: options.baseUrl,
         connectTimeout: options.connectionTimeout,
         data: body,
@@ -288,7 +330,6 @@ Data: ${response.data}
         sendTimeout: options.sendTimeout,
       ),
       response: null,
-      statusCode: -1,
       message: "There's no instance of MicroAppHttp | -1",
     );
   }

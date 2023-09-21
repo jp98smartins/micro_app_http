@@ -1,4 +1,4 @@
-import '../entities/app_http_exception.dart';
+import '../types/app_http_types.dart';
 import '../utils/constants.dart';
 import 'enums/app_http_authorization_type.dart';
 
@@ -12,6 +12,8 @@ class AppHttpOptions {
   final Duration connectionTimeout;
 
   final Duration delayBetweenRetries;
+
+  final bool needPinning;
 
   final Duration receiveTimeout;
 
@@ -29,6 +31,7 @@ class AppHttpOptions {
     this.baseUrl = '',
     this.connectionTimeout = Constants.connectionTimeout,
     this.delayBetweenRetries = Constants.delayBetweenRetries,
+    this.needPinning = false,
     this.handleException,
     this.receiveTimeout = Constants.receiveTimeout,
     this.retries = Constants.retries,

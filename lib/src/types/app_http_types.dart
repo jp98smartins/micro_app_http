@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
-typedef AppHttpResponse<T> = Response<T>;
-typedef AppHttpRequest = RequestOptions;
+typedef AppHttpException = DioException;
+typedef AppHttpExceptionType = DioExceptionType;
 typedef AppHttpInterceptor = InterceptorsWrapper;
+typedef AppHttpRequest = RequestOptions;
+typedef AppHttpResponse<T> = Response<T>;
