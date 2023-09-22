@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
-import 'package:micro_app_http/src/utils/app_http_overrides.dart';
 
 import 'micro_app_http_interface.dart';
 import 'utils/app_http_logger.dart';
 import 'utils/app_http_options.dart';
+import 'utils/app_http_overrides.dart';
+import 'utils/constants.dart';
 
 /// TODO:
 /// 1. Authentication options
-/// 2. Request with retry
 
 AppHttpException defaultExceptionHandler(AppHttpException exception) {
   // Certificate Exceptions
@@ -135,6 +135,23 @@ Data: ${response.data}
   final AppHttpOptions options;
   Dio? _external;
 
+  Future<AppHttpResponse<T>> onRequestHandler<T>(
+    Future<AppHttpResponse<T>> Function() request,
+  ) {
+    return options.customRequestHandler.customRequestHandler(request);
+  }
+
+  Future<Map<String, dynamic>> headers() async {
+    const headers = Constants.basicHeaders;
+
+    if (options.authorization.authorizationType ==
+        AppHttpAuthorizationType.headers) {
+      headers.addAll(await options.authorization.getAuthorization());
+    }
+
+    return headers;
+  }
+
   // Implementation of HTTP Methods.
 
   @override
@@ -151,11 +168,13 @@ Data: ${response.data}
     if (_external != null) {
       _external!.options.baseUrl = overrideBaseUrl ?? options.baseUrl;
 
-      return _external!.delete<T>(
-        endpoint,
-        data: body,
-        queryParameters: queryParams,
-        options: Options(headers: headers),
+      return onRequestHandler(
+        () => _external!.delete<T>(
+          endpoint,
+          data: body,
+          queryParameters: queryParams,
+          options: Options(headers: headers),
+        ),
       );
     }
 
@@ -190,10 +209,12 @@ Data: ${response.data}
     if (_external != null) {
       _external!.options.baseUrl = overrideBaseUrl ?? options.baseUrl;
 
-      return _external!.get<T>(
-        endpoint,
-        queryParameters: queryParams,
-        options: Options(headers: headers),
+      return onRequestHandler(
+        () => _external!.get<T>(
+          endpoint,
+          queryParameters: queryParams,
+          options: Options(headers: headers),
+        ),
       );
     }
 
@@ -228,11 +249,13 @@ Data: ${response.data}
     if (_external != null) {
       _external!.options.baseUrl = overrideBaseUrl ?? options.baseUrl;
 
-      return _external!.patch<T>(
-        endpoint,
-        data: body,
-        queryParameters: queryParams,
-        options: Options(headers: headers),
+      return onRequestHandler(
+        () => _external!.patch<T>(
+          endpoint,
+          data: body,
+          queryParameters: queryParams,
+          options: Options(headers: headers),
+        ),
       );
     }
 
@@ -268,11 +291,13 @@ Data: ${response.data}
     if (_external != null) {
       _external!.options.baseUrl = overrideBaseUrl ?? options.baseUrl;
 
-      return _external!.post<T>(
-        endpoint,
-        data: body,
-        queryParameters: queryParams,
-        options: Options(headers: headers),
+      return onRequestHandler(
+        () => _external!.post<T>(
+          endpoint,
+          data: body,
+          queryParameters: queryParams,
+          options: Options(headers: headers),
+        ),
       );
     }
 
@@ -308,11 +333,13 @@ Data: ${response.data}
     if (_external != null) {
       _external!.options.baseUrl = overrideBaseUrl ?? options.baseUrl;
 
-      return _external!.put<T>(
-        endpoint,
-        data: body,
-        queryParameters: queryParams,
-        options: Options(headers: headers),
+      return onRequestHandler(
+        () => _external!.put<T>(
+          endpoint,
+          data: body,
+          queryParameters: queryParams,
+          options: Options(headers: headers),
+        ),
       );
     }
 

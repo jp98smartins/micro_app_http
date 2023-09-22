@@ -1,9 +1,5 @@
 enum AppHttpAuthorizationType {
-  apiKey,
-
-  basicAuth,
-
-  bearerToken,
-
-  noAuth;
+  headers,
+  noAuthorization,
+  queryParams;
 }
