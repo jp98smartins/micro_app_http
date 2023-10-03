@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:micro_app_http/src/types/app_http_types.dart';
-import 'package:micro_app_http/src/utils/default_app_http_exception_handler.dart';
+import 'package:micro_app_http/src/default_app_http_exception_handler.dart';
 
 void main() {
   group(

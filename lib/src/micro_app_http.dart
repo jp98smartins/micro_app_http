@@ -1,15 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 
-import 'micro_app_http_interface.dart' show MicroAppHttpInterface;
+import 'interfaces/micro_app_http_interface.dart' show MicroAppHttpInterface;
 import 'types/app_http_types.dart';
-import 'utils/app_http_options.dart' show AppHttpOptions;
-import 'utils/app_http_overrides.dart';
+import 'app_http_options.dart' show AppHttpOptions;
+import 'utils/app_http_certificate_pinning.dart';
 import 'utils/constants.dart';
-import 'utils/interfaces/app_http_authorization_interface.dart';
+import 'interfaces/app_http_authorization_interface.dart';
 
 export 'types/app_http_types.dart';
-export 'utils/app_http_options.dart' show AppHttpOptions;
+export 'app_http_options.dart' show AppHttpOptions;
 
 // TODO:
 // 1 - Unit Tests
@@ -29,12 +29,12 @@ final class MicroAppHttp implements MicroAppHttpInterface {
 
     /// Implementation of BadCertificateCallback/Pinning.
     ///
-    /// Take a look at the [AppHttpOverrides.loadCertificate] method to understand
-    /// how to pin the app.
+    /// Take a look at the [AppHttpCertificatePinning.loadCertificate()] method 
+    /// to understand how to pin the app.
     _external!.httpClientAdapter = IOHttpClientAdapter(createHttpClient: () {
       return options.needsPinning
-          ? AppHttpOverrides.generic()
-          : AppHttpOverrides.pinned();
+          ? AppHttpCertificatePinning.pinned()
+          : AppHttpCertificatePinning.generic();
     });
 
     /// Implementation of Interceptor.
