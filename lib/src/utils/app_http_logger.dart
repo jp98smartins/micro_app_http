@@ -8,7 +8,7 @@ final class AppHttpLogger {
   static void log(
     String data, {
     StackTrace? stackTrace,
-    AppHttpLogColors color = AppHttpLogColors.cyan,
+    AppHttpLogColors color = AppHttpLogColors.black,
   }) {
     developer.log(
       "\x1B[${color.code}m$data\x1B[0m",

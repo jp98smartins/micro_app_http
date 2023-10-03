@@ -1,6 +1,4 @@
-import 'types/app_http_types.dart';
-
-export 'types/app_http_types.dart';
+import 'types/app_http_types.dart' show AppHttpResponse;
 
 abstract class MicroAppHttpInterface {
   Future<AppHttpResponse<T>?> delete<T>(

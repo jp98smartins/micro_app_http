@@ -1,18 +1,13 @@
-import 'package:micro_app_http/src/utils/constants.dart';
+import '../types/app_http_types.dart' show AppHttpException;
+import 'constants.dart';
+import 'interfaces/app_http_request_handler_interface.dart';
 
-import '../types/app_http_types.dart';
-
-abstract class RequestHandlerInterface {
-  Future<AppHttpResponse<T>> customRequestHandler<T>(
-    Future<AppHttpResponse<T>> Function() request,
-  );
-}
-
-final class DefaultRequestHandler implements RequestHandlerInterface {
-  const DefaultRequestHandler();
+final class DefaultAppHttpRequestHandler
+    implements AppHttpRequestHandlerInterface {
+  const DefaultAppHttpRequestHandler();
 
   @override
-  Future<AppHttpResponse<T>> customRequestHandler<T>(
+  Future<AppHttpResponse<T>> handleRequest<T>(
     Future<AppHttpResponse<T>> Function() request, {
     Duration delayBetweenRetries = Constants.delayBetweenRetries,
     int retries = Constants.retries,

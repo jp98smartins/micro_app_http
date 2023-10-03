@@ -1,46 +1,20 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 
-import 'micro_app_http_interface.dart';
-import 'utils/app_http_logger.dart';
-import 'utils/app_http_options.dart';
+import 'micro_app_http_interface.dart' show MicroAppHttpInterface;
+import 'types/app_http_types.dart';
+import 'utils/app_http_options.dart' show AppHttpOptions;
 import 'utils/app_http_overrides.dart';
 import 'utils/constants.dart';
+import 'utils/interfaces/app_http_authorization_interface.dart';
 
-/// TODO:
-/// 1. Authentication options
+export 'types/app_http_types.dart';
+export 'utils/app_http_options.dart' show AppHttpOptions;
 
-AppHttpException defaultExceptionHandler(AppHttpException exception) {
-  // Certificate Exceptions
-  if (exception.type == AppHttpExceptionType.badCertificate) {
-    return exception.copyWith(message: 'Certificate Exception');
-  }
-
-  // Timeout Exceptions
-  if ([
-    AppHttpExceptionType.connectionTimeout,
-    AppHttpExceptionType.receiveTimeout,
-    AppHttpExceptionType.sendTimeout
-  ].contains(exception.type)) {
-    return exception.copyWith(message: 'Timeout Exception');
-  }
-
-  // No Connection Exceptions
-  if (exception.type == AppHttpExceptionType.connectionError ||
-      exception.response == null) {
-    return exception.copyWith(message: 'No connection Exception');
-  }
-
-  // Server Exceptions (500)
-  if (exception.response?.statusCode == 500) {
-    return exception.copyWith(message: 'Server Exception');
-  }
-
-  // Other Exceptions
-  return exception;
-}
+// TODO:
+// 1 - Unit Tests
+// 2 - Return with records
+// 3 - Double certificate pinning
 
 final class MicroAppHttp implements MicroAppHttpInterface {
   MicroAppHttp(this.options) {
@@ -58,7 +32,7 @@ final class MicroAppHttp implements MicroAppHttpInterface {
     /// Take a look at the [AppHttpOverrides.loadCertificate] method to understand
     /// how to pin the app.
     _external!.httpClientAdapter = IOHttpClientAdapter(createHttpClient: () {
-      return options.needPinning
+      return options.needsPinning
           ? AppHttpOverrides.generic()
           : AppHttpOverrides.pinned();
     });
@@ -67,65 +41,17 @@ final class MicroAppHttp implements MicroAppHttpInterface {
     _external?.interceptors.add(
       AppHttpInterceptor(
         onError: (exception, handler) async {
-          if (options.showLogs) {
-            AppHttpLogger.log(
-              '''
-=====> [ START API ERROR ] +++++++++++++++++++++++++++++++++++++++++++++++++++++
-Request URI: ${exception.requestOptions.uri}
-Request Endpoint: ${exception.requestOptions.path}
-Headers: ${exception.requestOptions.headers.toString()}
-Query Params: ${exception.requestOptions.queryParameters.toString()}
-Body: ${jsonEncode(exception.requestOptions.data)}
-
- ---
-
-Status Code: ${exception.response?.statusCode ?? -1}
-Message: ${exception.message ?? 'Empty Message'}
-Exception Type: ${exception.type.name.toUpperCase()}
-StackTrace: ${exception.stackTrace}
-=====> [ END API ERROR ] -------------------------------------------------------''',
-              color: AppHttpLogColors.brightRed,
-            );
-          }
-
+          options.customLoggerHandler?.logException(exception);
           handler.next(
-            await options.handleException?.call(exception) ??
-                defaultExceptionHandler(exception),
+            await options.customExceptionHandler.handleException(exception),
           );
         },
         onRequest: (request, handler) {
-          if (options.showLogs) {
-            AppHttpLogger.log(
-              '''
-=====> [ START API REQUEST ] +++++++++++++++++++++++++++++++++++++++++++++++++++
-Method: ${request.method}
-Path: ${request.path}
-Base URL: ${request.baseUrl}
-URI: ${request.uri}
-Headers: ${request.headers.toString()}
-Query Params: ${request.queryParameters.toString()}
-Body: ${jsonEncode(request.data)}
-=====> [ END API REQUEST ] -----------------------------------------------------''',
-              color: AppHttpLogColors.brightBlue,
-            );
-          }
-
+          options.customLoggerHandler?.logRequest(request);
           handler.next(request);
         },
         onResponse: (response, handler) {
-          if (options.showLogs) {
-            AppHttpLogger.log(
-              '''
-=====> [ START API RESPONSE ] ++++++++++++++++++++++++++++++++++++++++++++++++++
-Status Code: ${response.statusCode}
-Status Message: ${response.statusMessage}
-Headers: ${response.headers.toString()}
-Data: ${response.data}
-=====> [ END API RESPONSE ] ----------------------------------------------------''',
-              color: AppHttpLogColors.brightBlue,
-            );
-          }
-
+          options.customLoggerHandler?.logResponse(response);
           handler.next(response);
         },
       ),
@@ -135,10 +61,14 @@ Data: ${response.data}
   final AppHttpOptions options;
   Dio? _external;
 
+  Future<AppHttpException> onExceptionHandler(AppHttpException exception) {
+    return options.customExceptionHandler.handleException(exception);
+  }
+
   Future<AppHttpResponse<T>> onRequestHandler<T>(
     Future<AppHttpResponse<T>> Function() request,
   ) {
-    return options.customRequestHandler.customRequestHandler(request);
+    return options.customRequestHandler.handleRequest(request);
   }
 
   Future<Map<String, dynamic>> headers() async {

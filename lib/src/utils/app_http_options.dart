@@ -1,9 +1,27 @@
-import '../types/app_http_types.dart';
 import '../utils/constants.dart';
-import 'app_http_authorization.dart';
-import 'app_http_request_handler.dart';
+import 'default_app_http_authorization.dart' show DefaultAppHttpAuthorization;
+import 'default_app_http_exception_handler.dart'
+    show DefaultAppHttpExceptionHandler;
+import 'default_app_http_logger_handler.dart' show DefaultAppHttpLoggerHandler;
+import 'default_app_http_request_handler.dart'
+    show DefaultAppHttpRequestHandler;
+import 'interfaces/app_http_authorization_interface.dart'
+    show AppHttpAuthorizationInterface;
+import 'interfaces/app_http_exception_handler_interface.dart'
+    show AppHttpExceptionHandlerInterface;
+import 'interfaces/app_http_logger_handler_interface.dart'
+    show AppHttpLoggerHandlerInterface;
+import 'interfaces/app_http_request_handler_interface.dart'
+    show AppHttpRequestHandlerInterface;
 
-export 'enums/app_http_authorization_type.dart';
+export 'interfaces/app_http_authorization_interface.dart'
+    show AppHttpAuthorizationInterface;
+export 'interfaces/app_http_exception_handler_interface.dart'
+    show AppHttpExceptionHandlerInterface;
+export 'interfaces/app_http_logger_handler_interface.dart'
+    show AppHttpLoggerHandlerInterface;
+export 'interfaces/app_http_request_handler_interface.dart'
+    show AppHttpRequestHandlerInterface;
 
 class AppHttpOptions {
   final AppHttpAuthorizationInterface authorization;
@@ -12,11 +30,17 @@ class AppHttpOptions {
 
   final Duration connectionTimeout;
 
-  final RequestHandlerInterface customRequestHandler;
+  final AppHttpExceptionHandlerInterface customExceptionHandler;
+
+  final AppHttpLoggerHandlerInterface? customLoggerHandler;
+
+  final AppHttpRequestHandlerInterface customRequestHandler;
 
   final Duration delayBetweenRetries;
 
-  final bool needPinning;
+  final bool isDebugMode;
+
+  final bool needsPinning;
 
   final Duration receiveTimeout;
 
@@ -24,22 +48,17 @@ class AppHttpOptions {
 
   final Duration sendTimeout;
 
-  final bool showLogs;
-
-  final Future<AppHttpException> Function(AppHttpException exception)?
-      handleException;
-
-  const AppHttpOptions({
-    this.authorization = const NoAuthAppHttpAuthorization(),
-    this.baseUrl = '',
+  AppHttpOptions({
+    this.authorization = const DefaultAppHttpAuthorization(),
+    required this.baseUrl,
     this.connectionTimeout = Constants.connectionTimeout,
-    this.customRequestHandler = const DefaultRequestHandler(),
+    this.customExceptionHandler = const DefaultAppHttpExceptionHandler(),
+    this.customRequestHandler = const DefaultAppHttpRequestHandler(),
     this.delayBetweenRetries = Constants.delayBetweenRetries,
-    this.needPinning = false,
-    this.handleException,
+    this.isDebugMode = false,
+    this.needsPinning = false,
     this.receiveTimeout = Constants.receiveTimeout,
     this.retries = Constants.retries,
     this.sendTimeout = Constants.sendTimeout,
-    this.showLogs = false,
-  });
+  }) : customLoggerHandler = DefaultAppHttpLoggerHandler(isDebugMode);
 }
